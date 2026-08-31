@@ -26,8 +26,8 @@ export const ZENITH_MODELS = [
   {
     id: 'zenith-jerald',
     name: 'Jerald',
-    apiModel: 'claude-3-5-sonnet',
-    description: 'Balanced performance, speed & coding (Sonnet 3.5)',
+    apiModel: 'claude-sonnet-5',
+    description: 'Balanced performance, speed & coding (Sonnet 5)',
     badge: 'Balanced',
     contextWindow: '128k',
     speed: 'Fast',
@@ -38,8 +38,8 @@ export const ZENITH_MODELS = [
   {
     id: 'zenith-riezl',
     name: 'Riezl',
-    apiModel: 'claude-3-5-haiku',
-    description: 'Ultra fast responses for everyday prompts (Haiku 3.5)',
+    apiModel: 'claude-haiku-4-5-20251001',
+    description: 'Ultra fast responses for everyday prompts (Haiku 4.5)',
     badge: 'Ultra Fast',
     contextWindow: '32k',
     speed: 'Instant',
