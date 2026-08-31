@@ -56,6 +56,30 @@ export default function ChatInput({
     e.target.value = '';
   };
 
+  // Clipboard Image Paste (Ctrl+V) Handler
+  const handlePaste = (e) => {
+    if (isLimitReached) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const imageFiles = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          const ext = item.type.split('/')[1] || 'png';
+          const namedFile = new File([file], `pasted-image-${Date.now()}.${ext}`, { type: item.type });
+          imageFiles.push(namedFile);
+        }
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      onAttachFiles(imageFiles);
+    }
+  };
+
   // Voice Input (Speech Recognition)
   const toggleVoiceInput = () => {
     if (isLimitReached) return;
@@ -149,6 +173,7 @@ export default function ChatInput({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             disabled={isGenerating || isLimitReached}
             placeholder={
               isLimitReached
