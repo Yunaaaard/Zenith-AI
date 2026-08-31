@@ -96,6 +96,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
         const reader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
+        let yieldedAnything = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -115,14 +116,23 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
             try {
               const parsed = JSON.parse(dataStr);
               const token = parsed.choices?.[0]?.delta?.content || '';
-              if (token) yield token;
+              if (token) { yield token; yieldedAnything = true; }
             } catch (_) {}
           }
         }
-        return;
+
+        // If SSE yielded nothing, try parsing the full buffer as plain JSON (non-streaming response)
+        if (!yieldedAnything && buffer.trim()) {
+          try {
+            const parsed = JSON.parse(buffer.trim());
+            const content = parsed.choices?.[0]?.message?.content || parsed.choices?.[0]?.text || '';
+            if (content) { yield content; return; }
+          } catch (_) {}
+        }
+        if (yieldedAnything) return;
       } else {
         const errText = await response.text().catch(() => '');
-        console.warn(`Tabitoken API stream returned ${response.status}:`, errText);
+        console.warn(`AI API stream returned ${response.status} (${isAgentRouter ? 'AgentRouter' : 'Tabitoken'}):`, errText);
       }
     } catch (err) {
       clearTimeout(timeoutId);
