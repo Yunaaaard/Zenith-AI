@@ -41,9 +41,9 @@ export const ZENITH_MODELS = [
   {
     id: 'zenith-riezl',
     name: 'Riezl',
-    apiModel: 'gpt-5.6-sol',
+    apiModel: 'glm-5.3',
     provider: 'agentrouter',
-    description: 'GPT-5.6 Sol — ultra-fast everyday AI (AgentRouter)',
+    description: 'GLM 5.3 — ultra-fast everyday reasoning AI (AgentRouter)',
     badge: 'Ultra Fast',
     contextWindow: '128k',
     speed: 'Instant',
