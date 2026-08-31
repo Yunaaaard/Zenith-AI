@@ -1,8 +1,6 @@
 import { getModelById } from './models';
 import { MODEL_SYSTEM_PROMPTS, SYSTEM_PROMPT } from './prompts';
 
-const DEFAULT_AI_KEY = 'sk-MUiv3RDxfV6W1y6Zq8FqoPVOQ2MIgVuOjdpZ7IXQUxF3Xkpj';
-
 /**
  * Stream AI response from Tabitoken / OpenAI-compatible endpoint.
  * Uses /api/ai proxy route (Vite dev proxy in local, vercel.json rewrite in production)
@@ -12,7 +10,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
   const model = getModelById(modelId);
 
   const envKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_API_KEY;
-  const activeKey = (apiKey && apiKey.trim()) || envKey || DEFAULT_AI_KEY;
+  const activeKey = (apiKey && apiKey.trim()) || envKey || '';
 
   // Always use /api/ai endpoint (proxied by Vite in dev and vercel.json in production)
   const baseUrl = '/api/ai';
@@ -103,7 +101,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
     }
   }
 
-  // === FAST LOCAL FALLBACK (used only when Tabitoken API is completely offline) ===
+  // === FAST LOCAL FALLBACK (used only when API is completely offline or key is missing) ===
   const fallbackText = generateLocalFallback(prompt, model);
   const chunks = fallbackText.match(/.{1,8}/g) || [fallbackText];
   for (const chunk of chunks) {
