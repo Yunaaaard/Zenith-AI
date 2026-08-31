@@ -151,11 +151,16 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
         if (yieldedAnything) return;
       } else {
         const errText = await response.text().catch(() => '');
-        console.warn(`AI API stream returned ${response.status} (${isAgentRouter ? 'AgentRouter' : 'Tabitoken'}):`, errText);
+        const errMsg = `[${isAgentRouter ? 'AgentRouter' : 'Tabitoken'} ${response.status}]: ${errText || response.statusText}`;
+        console.warn(`AI API stream returned ${response.status}:`, errText);
+        yield `⚠️ **${model.name} API Error:** ${errMsg}`;
+        return;
       }
     } catch (err) {
       clearTimeout(timeoutId);
       console.warn('Live AI streaming notice:', err.message);
+      yield `⚠️ **${model.name} Connection Error:** ${err.message}`;
+      return;
     }
   }
 
