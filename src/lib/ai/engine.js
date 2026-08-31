@@ -103,6 +103,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
         let yieldedAnything = false;
+        let reasoningText = '';
 
         while (true) {
           const { done, value } = await reader.read();
@@ -121,17 +122,29 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
 
             try {
               const parsed = JSON.parse(dataStr);
-              const token = parsed.choices?.[0]?.delta?.content || '';
-              if (token) { yield token; yieldedAnything = true; }
+              const delta = parsed.choices?.[0]?.delta;
+              const token = delta?.content || delta?.text || '';
+              if (token) {
+                yield token;
+                yieldedAnything = true;
+              } else if (delta?.reasoning_content) {
+                reasoningText += delta.reasoning_content;
+              }
             } catch (_) {}
           }
+        }
+
+        // If no main content tokens were yielded, yield accumulated reasoning text
+        if (!yieldedAnything && reasoningText) {
+          yield reasoningText;
+          return;
         }
 
         // If SSE yielded nothing, try parsing the full buffer as plain JSON (non-streaming response)
         if (!yieldedAnything && buffer.trim()) {
           try {
             const parsed = JSON.parse(buffer.trim());
-            const content = parsed.choices?.[0]?.message?.content || parsed.choices?.[0]?.text || '';
+            const content = parsed.choices?.[0]?.message?.content || parsed.choices?.[0]?.text || parsed.choices?.[0]?.message?.reasoning_content || '';
             if (content) { yield content; return; }
           } catch (_) {}
         }

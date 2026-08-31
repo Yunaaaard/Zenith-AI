@@ -5,7 +5,7 @@
       "destination": "https://tabitoken.com/v1/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
