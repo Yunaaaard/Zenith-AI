@@ -11,24 +11,10 @@ import { MODEL_SYSTEM_PROMPTS, SYSTEM_PROMPT } from './prompts';
 export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', files = [], messages = [], apiKey = '' }) {
   const model = getModelById(modelId);
 
-  const isAgentRouter = model.provider === 'agentrouter';
-
-  // Pick API key based on provider with failsafe defaults
-  const defaultKey = isAgentRouter
-    ? 'sk-XPNksTKdCi5W5Mf9KT54UGaqFghTpqASrzM9HKEoBDRxH8mQ'
-    : 'sk-MUiv3RDxfV6W1y6Zq8FqoPVOQ2MIgVuOjdpZ7IXQUxF3Xkpj';
-
-  const envKey = typeof import.meta !== 'undefined'
-    ? (isAgentRouter
-        ? import.meta.env?.VITE_AR_API_KEY
-        : import.meta.env?.VITE_AI_API_KEY)
-    : '';
-
+  const defaultKey = 'sk-MUiv3RDxfV6W1y6Zq8FqoPVOQ2MIgVuOjdpZ7IXQUxF3Xkpj';
+  const envKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_API_KEY;
   const activeKey = (apiKey && apiKey.trim()) || envKey || defaultKey;
-
-  // Tabitoken uses Vite/Vercel proxy (/api/ai) to avoid CORS
-  // AgentRouter has full CORS support (Access-Control-Allow-Origin: *) and direct client fetch bypasses Vercel datacenter WAF blocks
-  const baseUrl = isAgentRouter ? 'https://agentrouter.org/v1' : '/api/ai';
+  const baseUrl = '/api/ai';
 
   // Separate image attachments (Vision) from text/PDF attachments
   const imageFiles = files.filter((f) => f.previewUrl && (f.type?.startsWith('image/') || f.previewUrl?.startsWith('data:image')));
@@ -78,32 +64,21 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
     const timeoutId = setTimeout(() => controller.abort(), 18000);
 
     try {
-      const endpointUrl = isAgentRouter
-        ? '/api/agentrouter/chat'
-        : `${baseUrl}/chat/completions`;
+      const endpointUrl = `${baseUrl}/chat/completions`;
 
       const headers = {
         'Content-Type': 'application/json',
       };
-      if (activeKey && !isAgentRouter) headers['Authorization'] = `Bearer ${activeKey}`;
-
-      const requestBody = isAgentRouter
-        ? JSON.stringify({
-            model: model.apiModel,
-            messages: apiMessages,
-            apiKey: activeKey,
-            stream: true,
-          })
-        : JSON.stringify({
-            model: model.apiModel || 'claude-3-5-sonnet',
-            messages: apiMessages,
-            stream: true,
-          });
+      if (activeKey) headers['Authorization'] = `Bearer ${activeKey}`;
 
       const response = await fetch(endpointUrl, {
         method: 'POST',
         headers,
-        body: requestBody,
+        body: JSON.stringify({
+          model: model.apiModel || 'claude-opus-5-thinking',
+          messages: apiMessages,
+          stream: true,
+        }),
         signal: controller.signal,
       });
 

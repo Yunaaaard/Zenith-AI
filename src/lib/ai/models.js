@@ -25,32 +25,6 @@ export const ZENITH_MODELS = [
     icon: 'Brain',
     default: false,
   },
-  {
-    id: 'zenith-jerald',
-    name: 'Jerald',
-    apiModel: 'deepseek-v4-flash',
-    provider: 'agentrouter',
-    description: 'DeepSeek V4 Flash — fast reasoning & coding (AgentRouter)',
-    badge: 'Balanced',
-    contextWindow: '128k',
-    speed: 'Fast',
-    reasoning: 'High',
-    icon: 'Sparkles',
-    default: false,
-  },
-  {
-    id: 'zenith-riezl',
-    name: 'Riezl',
-    apiModel: 'glm-5.3',
-    provider: 'agentrouter',
-    description: 'GLM 5.3 — ultra-fast everyday reasoning AI (AgentRouter)',
-    badge: 'Ultra Fast',
-    contextWindow: '128k',
-    speed: 'Instant',
-    reasoning: 'Balanced',
-    icon: 'Zap',
-    default: false,
-  },
 ];
 
 export const getModelById = (id) => {
