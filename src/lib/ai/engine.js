@@ -26,8 +26,9 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
 
   const activeKey = (apiKey && apiKey.trim()) || envKey || defaultKey;
 
-  // Route to the correct proxy — /api/ar for AgentRouter, /api/ai for Tabitoken
-  const baseUrl = isAgentRouter ? '/api/ar' : '/api/ai';
+  // Tabitoken uses Vite/Vercel proxy (/api/ai) to avoid CORS
+  // AgentRouter has full CORS support (Access-Control-Allow-Origin: *) and direct client fetch bypasses Vercel datacenter WAF blocks
+  const baseUrl = isAgentRouter ? 'https://agentrouter.org/v1' : '/api/ai';
 
   // Separate image attachments (Vision) from text/PDF attachments
   const imageFiles = files.filter((f) => f.previewUrl && (f.type?.startsWith('image/') || f.previewUrl?.startsWith('data:image')));

@@ -1,23 +1,8 @@
 {
-  "headers": [
-    {
-      "source": "/api/ar/:path*",
-      "headers": [
-        {
-          "key": "User-Agent",
-          "value": "RooCode/3.0.0"
-        }
-      ]
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/ai/:path*",
       "destination": "https://tabitoken.com/v1/:path*"
-    },
-    {
-      "source": "/api/ar/:path*",
-      "destination": "https://agentrouter.org/v1/:path*"
     },
     {
       "source": "/(.*)",
