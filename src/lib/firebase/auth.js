@@ -178,8 +178,12 @@ export const verifyGuestToken = async (tokenInput) => {
           };
         }
 
+        const nameSlug = (data.guestName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const tokenNum = cleanToken.replace('ZENITH-', '');
+        const guestUid = data.uid || `guest-${nameSlug}-${tokenNum}`;
+
         const guestUser = {
-          uid: 'guest-' + cleanToken,
+          uid: guestUid,
           displayName: data.guestName || 'Guest User',
           email: `${(data.guestName || 'guest').toLowerCase().replace(/\s+/g, '')}@guest.zenith.ai`,
           role: 'guest',
