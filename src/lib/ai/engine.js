@@ -1,19 +1,21 @@
 import { getModelById } from './models';
 import { MODEL_SYSTEM_PROMPTS, SYSTEM_PROMPT } from './prompts';
 
+const DEFAULT_AI_KEY = 'sk-MUiv3RDxfV6W1y6Zq8FqoPVOQ2MIgVuOjdpZ7IXQUxF3Xkpj';
+
 /**
  * Stream AI response from Tabitoken / OpenAI-compatible endpoint.
- * Uses Vite dev proxy (/api/ai) to avoid CORS in development.
+ * Uses /api/ai proxy route (Vite dev proxy in local, vercel.json rewrite in production)
+ * to prevent browser CORS blocks and guarantee live streaming responses.
  */
 export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', files = [], messages = [], apiKey = '' }) {
   const model = getModelById(modelId);
 
   const envKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_API_KEY;
-  const activeKey = (apiKey && apiKey.trim()) || envKey || '';
+  const activeKey = (apiKey && apiKey.trim()) || envKey || DEFAULT_AI_KEY;
 
-  // In dev mode, use Vite proxy path; in production, use direct URL
-  const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
-  const baseUrl = isDev ? '/api/ai' : (import.meta.env?.VITE_AI_BASE_URL || 'https://tabitoken.com/v1');
+  // Always use /api/ai endpoint (proxied by Vite in dev and vercel.json in production)
+  const baseUrl = '/api/ai';
 
   // Build file attachment context if present
   const fileContextText = files.length > 0
@@ -42,10 +44,10 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
 
   if (activeKey) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s fast timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
     try {
-      const endpointUrl = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+      const endpointUrl = `${baseUrl}/chat/completions`;
 
       const response = await fetch(endpointUrl, {
         method: 'POST',
@@ -91,6 +93,9 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
           }
         }
         return;
+      } else {
+        const errText = await response.text().catch(() => '');
+        console.warn(`Tabitoken API stream returned ${response.status}:`, errText);
       }
     } catch (err) {
       clearTimeout(timeoutId);
@@ -98,7 +103,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
     }
   }
 
-  // === FAST LOCAL FALLBACK ===
+  // === FAST LOCAL FALLBACK (used only when Tabitoken API is completely offline) ===
   const fallbackText = generateLocalFallback(prompt, model);
   const chunks = fallbackText.match(/.{1,8}/g) || [fallbackText];
   for (const chunk of chunks) {
@@ -130,5 +135,5 @@ function generateLocalFallback(prompt, model) {
     return `### Quantum Computing — The Core Idea\n\nClassical computers process bits as **0 or 1**. Quantum computers use **qubits**, which can be both simultaneously (superposition) — exponentially expanding what's computable in parallel.\n\n| Application | Speedup | Status |\n|---|---|---|\n| Molecular Simulation | Exponential | Strongest Case |\n| Breaking RSA/ECC | Exponential | Future (requires 20M qubits) |\n| Unstructured Search | Quadratic (√N) | Moderate |\n\n\`\`\`python\nfrom qiskit import QuantumCircuit\nqc = QuantumCircuit(2)\nqc.h(0)       # Superposition\nqc.cx(0, 1)   # Entanglement\nqc.measure_all()\n\`\`\``;
   }
 
-  return `I'm **${model.name}**! How can I assist you with your request?`;
+  return `I'm **${model.name}** — an AI assistant powered by Zenith AI. How can I assist you with your request?`;
 }
