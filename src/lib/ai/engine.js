@@ -11,11 +11,18 @@ import { MODEL_SYSTEM_PROMPTS, SYSTEM_PROMPT } from './prompts';
 export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', files = [], messages = [], apiKey = '' }) {
   const model = getModelById(modelId);
 
-  const envKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_API_KEY;
+  const isAgentRouter = model.provider === 'agentrouter';
+
+  // Pick API key based on provider
+  const envKey = typeof import.meta !== 'undefined'
+    ? (isAgentRouter
+        ? import.meta.env?.VITE_AR_API_KEY
+        : import.meta.env?.VITE_AI_API_KEY)
+    : '';
   const activeKey = (apiKey && apiKey.trim()) || envKey || '';
 
-  // Always use /api/ai endpoint (proxied by Vite in dev and vercel.json in production)
-  const baseUrl = '/api/ai';
+  // Route to the correct proxy — /api/ar for AgentRouter, /api/ai for Tabitoken
+  const baseUrl = isAgentRouter ? '/api/ar' : '/api/ai';
 
   // Separate image attachments (Vision) from text/PDF attachments
   const imageFiles = files.filter((f) => f.previewUrl && (f.type?.startsWith('image/') || f.previewUrl?.startsWith('data:image')));

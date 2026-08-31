@@ -14,7 +14,7 @@ export const ZENITH_MODELS = [
   {
     id: 'zenith-charles',
     name: 'Charles',
-    apiModel: 'claude-opus-4-8',
+    apiModel: 'claude-opus-4-8-thinking',
     description: 'High-precision advanced reasoning engine (Opus 4.8)',
     badge: 'Precision',
     contextWindow: '128k',
