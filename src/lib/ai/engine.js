@@ -5,6 +5,8 @@ import { MODEL_SYSTEM_PROMPTS, SYSTEM_PROMPT } from './prompts';
  * Stream AI response from Tabitoken / OpenAI-compatible endpoint.
  * Uses /api/ai proxy route (Vite dev proxy in local, vercel.json rewrite in production)
  * to prevent browser CORS blocks and guarantee live streaming responses.
+ * 
+ * Supports Multimodal Vision (images) and Document Parsing (PDFs, text, code).
  */
 export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', files = [], messages = [], apiKey = '' }) {
   const model = getModelById(modelId);
@@ -15,13 +17,15 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
   // Always use /api/ai endpoint (proxied by Vite in dev and vercel.json in production)
   const baseUrl = '/api/ai';
 
-  // Build file attachment context if present
-  const fileContextText = files.length > 0
-    ? `\n\n[Attached Files (${files.length})]:\n` +
-      files.map((f) => `--- ${f.name} ---\n${f.content ? f.content.substring(0, 3000) : '[Binary File]'}`).join('\n\n')
-    : '';
+  // Separate image attachments (Vision) from text/PDF attachments
+  const imageFiles = files.filter((f) => f.previewUrl && (f.type?.startsWith('image/') || f.previewUrl?.startsWith('data:image')));
+  const textFiles = files.filter((f) => !imageFiles.includes(f));
 
-  const fullPrompt = prompt + fileContextText;
+  let textPrompt = prompt;
+  if (textFiles.length > 0) {
+    textPrompt += '\n\n[Attached Documents & Files]:\n' +
+      textFiles.map((f) => `--- ${f.name} (${f.type || 'file'}) ---\n${f.content ? f.content.substring(0, 10000) : '[Document File]'}`).join('\n\n');
+  }
 
   // Pick the persona system prompt for this model, fall back to flagship (Mikel)
   const systemInstruction = MODEL_SYSTEM_PROMPTS[modelId] || MODEL_SYSTEM_PROMPTS['zenith-mikel'] || SYSTEM_PROMPT;
@@ -30,19 +34,33 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
   const contextMessages = Array.isArray(messages) && messages.length > 1
     ? messages.slice(-10, -1).map((m) => ({
         role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content || '',
+        content: typeof m.content === 'string' ? m.content : (m.content?.[0]?.text || ''),
       }))
     : [];
+
+  // Construct user message payload (multimodal array if images attached, string otherwise)
+  let userMessagePayload;
+  if (imageFiles.length > 0) {
+    userMessagePayload = [
+      { type: 'text', text: textPrompt || 'Analyze the attached image(s).' },
+      ...imageFiles.map((img) => ({
+        type: 'image_url',
+        image_url: { url: img.previewUrl },
+      })),
+    ];
+  } else {
+    userMessagePayload = textPrompt;
+  }
 
   const apiMessages = [
     { role: 'system', content: systemInstruction },
     ...contextMessages,
-    { role: 'user', content: fullPrompt },
+    { role: 'user', content: userMessagePayload },
   ];
 
   if (activeKey) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 18000); // 18s timeout for Vision/PDFs
 
     try {
       const endpointUrl = `${baseUrl}/chat/completions`;
@@ -101,7 +119,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
     }
   }
 
-  // === FAST LOCAL FALLBACK (used only when API is completely offline or key is missing) ===
+  // === FAST LOCAL FALLBACK ===
   const fallbackText = generateLocalFallback(prompt, model);
   const chunks = fallbackText.match(/.{1,8}/g) || [fallbackText];
   for (const chunk of chunks) {
