@@ -58,19 +58,23 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
     { role: 'user', content: userMessagePayload },
   ];
 
-  if (activeKey) {
+  // Always attempt live API call — API key is injected by Vercel build environment
+  // or Vite dev proxy. Never gate on missing key since that causes silent fallback.
+  {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 18000); // 18s timeout for Vision/PDFs
+    const timeoutId = setTimeout(() => controller.abort(), 18000);
 
     try {
       const endpointUrl = `${baseUrl}/chat/completions`;
 
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      if (activeKey) headers['Authorization'] = `Bearer ${activeKey}`;
+
       const response = await fetch(endpointUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${activeKey}`,
-        },
+        headers,
         body: JSON.stringify({
           model: model.apiModel || 'claude-3-5-sonnet',
           messages: apiMessages,
