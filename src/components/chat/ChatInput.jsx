@@ -130,13 +130,13 @@ export default function ChatInput({
         />
 
         {/* Text Input Row */}
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           {/* File Upload Button */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isGenerating || isLimitReached}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition disabled:opacity-40"
+            className="w-9 h-9 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition disabled:opacity-40 shrink-0 flex items-center justify-center"
             title={isLimitReached ? 'Guest prompt limit reached' : 'Attach Files'}
           >
             <Paperclip className="w-5 h-5" />
@@ -155,7 +155,7 @@ export default function ChatInput({
                 ? 'Prompt limit reached (5/5 prompts used). Sign out to enter a new token.'
                 : 'Message Zenith AI...'
             }
-            className="composer-textarea flex-1 max-h-[180px] bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none resize-none disabled:opacity-50"
+            className="composer-textarea flex-1 max-h-[180px] bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none resize-none disabled:opacity-50 py-1.5 leading-6 my-auto"
           />
 
           {/* Voice Input Button */}
@@ -163,7 +163,7 @@ export default function ChatInput({
             type="button"
             onClick={toggleVoiceInput}
             disabled={isGenerating || isLimitReached}
-            className={`p-2 rounded-xl transition disabled:opacity-40 ${
+            className={`w-9 h-9 rounded-xl transition disabled:opacity-40 shrink-0 flex items-center justify-center ${
               isListening
                 ? 'text-red-400 bg-red-500/10 animate-pulse'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -178,7 +178,7 @@ export default function ChatInput({
             type="button"
             onClick={handleSubmit}
             disabled={!canSend}
-            className={`p-2.5 rounded-xl flex items-center justify-center transition shadow-md ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition shadow-md shrink-0 ${
               canSend
                 ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/25 active:scale-95'
                 : 'bg-white/5 text-slate-600 cursor-not-allowed border border-white/5'
