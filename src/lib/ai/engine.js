@@ -13,13 +13,18 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
 
   const isAgentRouter = model.provider === 'agentrouter';
 
-  // Pick API key based on provider
+  // Pick API key based on provider with failsafe defaults
+  const defaultKey = isAgentRouter
+    ? 'sk-XPNksTKdCi5W5Mf9KT54UGaqFghTpqASrzM9HKEoBDRxH8mQ'
+    : 'sk-MUiv3RDxfV6W1y6Zq8FqoPVOQ2MIgVuOjdpZ7IXQUxF3Xkpj';
+
   const envKey = typeof import.meta !== 'undefined'
     ? (isAgentRouter
         ? import.meta.env?.VITE_AR_API_KEY
         : import.meta.env?.VITE_AI_API_KEY)
     : '';
-  const activeKey = (apiKey && apiKey.trim()) || envKey || '';
+
+  const activeKey = (apiKey && apiKey.trim()) || envKey || defaultKey;
 
   // Route to the correct proxy — /api/ar for AgentRouter, /api/ai for Tabitoken
   const baseUrl = isAgentRouter ? '/api/ar' : '/api/ai';

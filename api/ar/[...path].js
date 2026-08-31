@@ -14,15 +14,22 @@ export default async function handler(req, res) {
       'User-Agent': 'RooCode/3.0.0',
     };
 
-    // Forward Authorization header from client
-    if (req.headers.authorization) {
+    // Forward Authorization header from client, or fallback to server env key / working key
+    const defaultArKey = process.env.VITE_AR_API_KEY || process.env.AR_API_KEY || 'sk-XPNksTKdCi5W5Mf9KT54UGaqFghTpqASrzM9HKEoBDRxH8mQ';
+    if (req.headers.authorization && req.headers.authorization.length > 10) {
       headers['Authorization'] = req.headers.authorization;
+    } else if (defaultArKey) {
+      headers['Authorization'] = `Bearer ${defaultArKey}`;
     }
+
+    const requestBody = req.body
+      ? (typeof req.body === 'string' ? req.body : JSON.stringify(req.body))
+      : undefined;
 
     const response = await fetch(targetUrl, {
       method: req.method,
       headers,
-      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+      body: req.method !== 'GET' ? requestBody : undefined,
     });
 
     // Forward streaming response
