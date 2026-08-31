@@ -78,22 +78,32 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
     const timeoutId = setTimeout(() => controller.abort(), 18000);
 
     try {
-      const endpointUrl = `${baseUrl}/chat/completions`;
+      const endpointUrl = isAgentRouter
+        ? '/api/agentrouter/chat'
+        : `${baseUrl}/chat/completions`;
 
       const headers = {
         'Content-Type': 'application/json',
       };
-      if (activeKey) headers['Authorization'] = `Bearer ${activeKey}`;
-      if (isAgentRouter) headers['User-Agent'] = 'RooCode/3.0.0';
+      if (activeKey && !isAgentRouter) headers['Authorization'] = `Bearer ${activeKey}`;
+
+      const requestBody = isAgentRouter
+        ? JSON.stringify({
+            model: model.apiModel,
+            messages: apiMessages,
+            apiKey: activeKey,
+            stream: true,
+          })
+        : JSON.stringify({
+            model: model.apiModel || 'claude-3-5-sonnet',
+            messages: apiMessages,
+            stream: true,
+          });
 
       const response = await fetch(endpointUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          model: model.apiModel || 'claude-3-5-sonnet',
-          messages: apiMessages,
-          stream: true,
-        }),
+        body: requestBody,
         signal: controller.signal,
       });
 
