@@ -17,6 +17,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/ar/, '/v1'),
         secure: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('User-Agent', 'RooCode/3.0.0');
+          });
+        },
       },
       '/api/auth': {
         target: 'http://localhost:5000',

@@ -78,6 +78,7 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
         'Content-Type': 'application/json',
       };
       if (activeKey) headers['Authorization'] = `Bearer ${activeKey}`;
+      if (isAgentRouter) headers['User-Agent'] = 'RooCode/3.0.0';
 
       const response = await fetch(endpointUrl, {
         method: 'POST',
