@@ -1,6 +1,6 @@
 import { signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth, isFirebaseConfigured, db } from './client';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 export const mapAuthError = (errorCode) => {
   switch (errorCode) {
@@ -83,10 +83,12 @@ export const requestGuestToken = async (guestName) => {
     if (response.ok) {
       const data = await response.json();
       if (data.success && data.token) {
-        // Also save to Firebase Firestore directly if configured on client
+        // Save to Firestore with name-prefixed doc ID: e.g. "zel-ZENITH-321312"
         if (isFirebaseConfigured && db) {
           try {
-            await setDoc(doc(db, 'guestTokens', data.token), {
+            const nameSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+            const firestoreId = `${nameSlug}-${data.token}`;
+            await setDoc(doc(db, 'guestTokens', firestoreId), {
               token: data.token,
               guestName: name,
               status: 'approved',
@@ -107,7 +109,9 @@ export const requestGuestToken = async (guestName) => {
 
   if (isFirebaseConfigured && db) {
     try {
-      await setDoc(doc(db, 'guestTokens', fallbackToken), {
+      const nameSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+      const firestoreId = `${nameSlug}-${fallbackToken}`;
+      await setDoc(doc(db, 'guestTokens', firestoreId), {
         token: fallbackToken,
         guestName: name,
         status: 'approved',
@@ -161,14 +165,14 @@ export const verifyGuestToken = async (tokenInput) => {
     console.warn('Backend verification notice (checking Firestore client directly):', err.message);
   }
 
-  // Direct Firestore Verification Fallback
+  // Direct Firestore Verification Fallback — query by token field (doc ID is now name-prefixed)
   if (isFirebaseConfigured && db) {
     try {
-      const docRef = doc(db, 'guestTokens', cleanToken);
-      const snap = await getDoc(docRef);
+      const q = query(collection(db, 'guestTokens'), where('token', '==', cleanToken));
+      const querySnap = await getDocs(q);
 
-      if (snap.exists()) {
-        const data = snap.data();
+      if (!querySnap.empty) {
+        const data = querySnap.docs[0].data();
 
         // Reject if token has been expired (guest logged out)
         if (data.status === 'expired') {
@@ -193,7 +197,9 @@ export const verifyGuestToken = async (tokenInput) => {
         localStorage.setItem('zenith_guest_token', cleanToken);
         return { user: guestUser, error: null };
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Firestore fallback query error:', e);
+    }
   }
 
   return {
