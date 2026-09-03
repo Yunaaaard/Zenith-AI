@@ -11,9 +11,8 @@ import { MODEL_SYSTEM_PROMPTS, SYSTEM_PROMPT } from './prompts';
 export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', files = [], messages = [], apiKey = '' }) {
   const model = getModelById(modelId);
 
-  const defaultKey = 'sk-MUiv3RDxfV6W1y6Zq8FqoPVOQ2MIgVuOjdpZ7IXQUxF3Xkpj';
   const envKey = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_API_KEY;
-  const activeKey = (apiKey && apiKey.trim()) || envKey || defaultKey;
+  const activeKey = (apiKey && apiKey.trim()) || envKey || '';
   const baseUrl = '/api/ai';
 
   // Separate image attachments (Vision) from text/PDF attachments
@@ -116,7 +115,9 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
               } else if (delta?.reasoning_content) {
                 reasoningText += delta.reasoning_content;
               }
-            } catch (_) {}
+            } catch {
+              /* ignore JSON parse errors */
+            }
           }
         }
 
@@ -132,12 +133,14 @@ export async function* streamAIResponse({ prompt, modelId = 'zenith-mikel', file
             const parsed = JSON.parse(buffer.trim());
             const content = parsed.choices?.[0]?.message?.content || parsed.choices?.[0]?.text || parsed.choices?.[0]?.message?.reasoning_content || '';
             if (content) { yield content; return; }
-          } catch (_) {}
+          } catch {
+            /* ignore JSON parse errors */
+          }
         }
         if (yieldedAnything) return;
       } else {
         const errText = await response.text().catch(() => '');
-        const errMsg = `[${isAgentRouter ? 'AgentRouter' : 'Tabitoken'} ${response.status}]: ${errText || response.statusText}`;
+        const errMsg = `[Tabitoken ${response.status}]: ${errText || response.statusText}`;
         console.warn(`AI API stream returned ${response.status}:`, errText);
         yield `⚠️ **${model.name} API Error:** ${errMsg}`;
         return;
